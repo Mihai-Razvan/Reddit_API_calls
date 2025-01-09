@@ -1,11 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from api_fetch import fetch_user_info, fetch_user_posts_batch, fetch_user_comments_batch
-from reddit_client import reddit
-from utils import make_links_clickable, open_json_window
+from utils import reddit, make_links_clickable, open_json_window
 
 from .formatters import format_user_info, format_user_post, format_user_comment
+from .api_fetch import fetch_user_info, fetch_user_posts_batch, fetch_user_comments_batch
 
 user_posts_generator = None
 user_comments_generator = None
@@ -124,9 +123,9 @@ def setup_gui():
     posts_tab = ttk.Frame(notebook)
     comments_tab = ttk.Frame(notebook)
 
-    notebook.add(selected_tab, text="User Info")
-    notebook.add(posts_tab, text="User Posts")
-    notebook.add(comments_tab, text="User Comments")
+    notebook.add(selected_tab, text="General Info")
+    notebook.add(posts_tab, text="Posts")
+    notebook.add(comments_tab, text="Comments")
     notebook.pack(expand=True, fill="both")
 
     tk.Label(selected_tab, text="Enter Reddit Username:").grid(row=0, column=0, padx=10, pady=10, sticky="w")

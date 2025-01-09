@@ -1,5 +1,4 @@
-from reddit_client import reddit
-from utils import get_serializable_data
+from utils import reddit, get_serializable_data
 
 from datetime import datetime
 

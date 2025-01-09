@@ -1,7 +1,19 @@
+import os
+import praw
 import re
 import webbrowser
 import json
 import tkinter as tk
+from dotenv import load_dotenv
+
+load_dotenv()
+
+reddit = praw.Reddit(
+    client_id=os.getenv("CLIENT_ID"),
+    client_secret=os.getenv("CLIENT_SECRET"),
+    user_agent='api-calls'
+)
+
 
 def get_serializable_data(obj):
     """
@@ -50,7 +62,7 @@ def open_json_window(json_text):
     json_window = tk.Toplevel()
     json_window.title("JSON Data")
 
-    json_text_widget = tk.Text(json_window, width=80, height=20, wrap="word")
+    json_text_widget = tk.Text(json_window, width=100, height=40, wrap="word")
     json_text_widget.insert(tk.END, json.dumps(json_text, indent=4))
     json_text_widget.config(state="disabled")
     json_text_widget.pack(padx=10, pady=10)

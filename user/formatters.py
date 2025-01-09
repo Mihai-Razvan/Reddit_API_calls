@@ -20,10 +20,10 @@ def format_user_post(user_post):
 
     # Wrap long text at 100 characters for specific fields
     title = user_post.get('title', 'N/A')
-    wrapped_title = '\n'.join(textwrap.wrap(title, width=100))
+    wrapped_title = '\n'.join(textwrap.wrap(title, width=90))
 
     url = user_post.get('url', 'N/A')
-    wrapped_url = '\n'.join(textwrap.wrap(url, width=100))
+    wrapped_url = '\n'.join(textwrap.wrap(url, width=90))
 
     return (
         f"ID: {user_post.get('id', 'N/A')}\n"
@@ -44,10 +44,10 @@ def format_user_comment(user_comment):
 
     # Wrap long text at 100 characters for specific fields
     body = user_comment.get('body', 'N/A')
-    wrapped_body = textwrap.fill(body, width=100)
+    wrapped_body = textwrap.fill(body, width=90)
 
     url = user_comment.get('url', 'N/A')
-    wrapped_url = '\n'.join(textwrap.wrap(url, width=100))
+    wrapped_url = '\n'.join(textwrap.wrap(url, width=90))
 
     return (
         f"ID: {user_comment.get('id', 'N/A')}\n"
