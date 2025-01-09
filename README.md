@@ -23,7 +23,7 @@ The application provides a simple way to interact with Reddit programmatically. 
 2.  **Install Dependencies:**
 
     ```bash
-    pip install python-dotenv praw tkinter
+    pip install -r requirements.txt
     ```
 
     This will install the required libraries:
