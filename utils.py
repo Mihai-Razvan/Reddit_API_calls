@@ -66,3 +66,12 @@ def open_json_window(json_text):
     json_text_widget.insert(tk.END, json.dumps(json_text, indent=4))
     json_text_widget.config(state="disabled")
     json_text_widget.pack(padx=10, pady=10)
+
+    def check_for_quit(event=None):
+        """Allow quitting by pressing 'q', 'Q', or 'ESC'."""
+        json_window.destroy()
+
+    # Rebind the 'q', 'Q', and ESC keys to close the app each time we show the main menu
+    json_window.bind("q", check_for_quit)  # 'q' key to quit
+    json_window.bind("Q", check_for_quit)  # 'Q' key to quit
+    json_window.bind("<Escape>", check_for_quit)  # ESC key to quit

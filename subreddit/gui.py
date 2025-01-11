@@ -8,7 +8,7 @@ from .api_fetch import fetch_subreddit_info, fetch_subreddit_posts_batch
 
 subreddit_posts_generator = None
 
-def get_subreddit_info(subreddit_entry, subreddit_info_text_widget, show_subreddit_info_json_button):
+def get_subreddit_info(subreddit_entry, subreddit_info_text_widget, show_subreddit_info_json_button, canvas_posts, canvas_frame_posts, subreddit_posts, subreddit_posts_full_json):
     """Fetch subreddit data and update the GUI with selected fields."""
     subreddit_name = subreddit_entry.get().strip()
     if not subreddit_name:
@@ -16,6 +16,7 @@ def get_subreddit_info(subreddit_entry, subreddit_info_text_widget, show_subredd
         return
 
     try:
+        # Fetch and display subreddit info
         subreddit_info, subreddit_info_full_json = fetch_subreddit_info(subreddit_name)
         subreddit_data_str = format_subreddit_info(subreddit_info)
         subreddit_info_text_widget.config(state="normal")
@@ -25,8 +26,15 @@ def get_subreddit_info(subreddit_entry, subreddit_info_text_widget, show_subredd
 
         make_links_clickable(subreddit_info_text_widget, subreddit_data_str)
         show_subreddit_info_json_button.config(state="normal", command=lambda: open_json_window(subreddit_info_full_json))
+
+        # Automatically load the first batch of posts
+        subreddit_posts.clear()
+        subreddit_posts_full_json.clear()
+        get_subreddit_posts(subreddit_entry, canvas_posts, canvas_frame_posts, subreddit_posts, subreddit_posts_full_json)
+
     except Exception as e:
         messagebox.showerror("Error", f"Failed to fetch data: {e}")
+
 
 def get_subreddit_posts(subreddit_entry, canvas, canvas_frame, subreddit_posts, subreddit_posts_full_json):
     global subreddit_posts_generator
@@ -42,14 +50,16 @@ def get_subreddit_posts(subreddit_entry, canvas, canvas_frame, subreddit_posts, 
             next_subreddit_posts, next_subreddit_posts_full_json = fetch_subreddit_posts_batch(subreddit_posts_generator)
             subreddit_posts.extend(next_subreddit_posts)
             subreddit_posts_full_json.extend(next_subreddit_posts_full_json)
-            display_subreddit_posts(subreddit_posts, subreddit_posts_full_json, canvas, canvas_frame)
         else:  # Load more posts when button is clicked
             next_subreddit_posts, next_subreddit_posts_full_json = fetch_subreddit_posts_batch(subreddit_posts_generator, batch_size=5)
             subreddit_posts.extend(next_subreddit_posts)
             subreddit_posts_full_json.extend(next_subreddit_posts_full_json)
-            display_subreddit_posts(subreddit_posts, subreddit_posts_full_json, canvas, canvas_frame)
+
+        display_subreddit_posts(subreddit_posts, subreddit_posts_full_json, canvas, canvas_frame)
+
     except Exception as e:
         messagebox.showerror("Error", f"Failed to fetch posts: {e}")
+
 
 def display_subreddit_posts(posts, full_posts_json, canvas, canvas_frame):
     """Display the list of posts and their details in the canvas."""
@@ -70,10 +80,21 @@ def display_subreddit_posts(posts, full_posts_json, canvas, canvas_frame):
     canvas.update_idletasks()
     canvas.config(scrollregion=canvas.bbox("all"))
 
+
 def setup_gui():
     root = tk.Tk()
     root.title("Reddit Subreddit Data Extractor")
     root.geometry("800x800")
+
+    def check_for_quit(event=None):
+        """Allow quitting by pressing 'q', 'Q', or 'ESC'."""
+        root.destroy()
+
+    # Rebind the 'q', 'Q', and ESC keys to close the app each time we show the main menu
+    root.bind("q", check_for_quit)  # 'q' key to quit
+    root.bind("Q", check_for_quit)  # 'Q' key to quit
+    root.bind("<Escape>", check_for_quit)  # ESC key to quit
+
     notebook = ttk.Notebook(root)
 
     selected_tab = ttk.Frame(notebook)
@@ -94,7 +115,22 @@ def setup_gui():
     show_subreddit_info_json_button = tk.Button(selected_tab, text="View Full JSON", state="disabled")
     show_subreddit_info_json_button.grid(row=2, column=1, pady=10)
 
-    fetch_button = tk.Button(selected_tab, text="Fetch Data", command=lambda: get_subreddit_info(subreddit_entry, subreddit_info_text_widget, show_subreddit_info_json_button))
+    subreddit_posts = []
+    subreddit_posts_full_json = []
+
+    fetch_button = tk.Button(
+        selected_tab,
+        text="Search",
+        command=lambda: get_subreddit_info(
+            subreddit_entry,
+            subreddit_info_text_widget,
+            show_subreddit_info_json_button,
+            canvas_posts,
+            canvas_frame_posts,
+            subreddit_posts,
+            subreddit_posts_full_json,
+        )
+    )
     fetch_button.grid(row=0, column=2, padx=10, pady=10)
 
     # Subreddit Posts Tab
@@ -107,12 +143,22 @@ def setup_gui():
     canvas_posts.config(yscrollcommand=scrollbar_posts.set)
     canvas_frame_posts = ttk.Frame(canvas_posts)
     canvas_posts.create_window((0, 0), window=canvas_frame_posts, anchor="nw")
-    subreddit_posts = []
-    subreddit_posts_full_json = []
-    load_more_posts_button = tk.Button(posts_tab, text="Load More Posts", command=lambda: get_subreddit_posts(subreddit_entry, canvas_posts, canvas_frame_posts, subreddit_posts, subreddit_posts_full_json))
+
+    load_more_posts_button = tk.Button(
+        posts_tab,
+        text="Load More Posts",
+        command=lambda: get_subreddit_posts(
+            subreddit_entry,
+            canvas_posts,
+            canvas_frame_posts,
+            subreddit_posts,
+            subreddit_posts_full_json
+        )
+    )
     load_more_posts_button.pack(padx=10, pady=10)
 
     root.mainloop()
+
 
 def main_subreddit_osint():
     setup_gui()

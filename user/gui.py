@@ -2,14 +2,14 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from utils import reddit, make_links_clickable, open_json_window
-
 from .formatters import format_user_info, format_user_post, format_user_comment
 from .api_fetch import fetch_user_info, fetch_user_posts_batch, fetch_user_comments_batch
 
 user_posts_generator = None
 user_comments_generator = None
 
-def get_user_info(username_entry, user_info_text_widget, show_user_info_json_button):
+
+def get_user_info(username_entry, user_info_text_widget, show_user_info_json_button, canvas_posts, canvas_frame_posts, user_posts, user_posts_full_json, canvas_comments, canvas_frame_comments, user_comments, user_comments_full_json):
     """Fetch user data and update the GUI with selected fields."""
     username = username_entry.get().strip()
     if not username:
@@ -17,6 +17,7 @@ def get_user_info(username_entry, user_info_text_widget, show_user_info_json_but
         return
 
     try:
+        # Fetch and display user info
         user_info, user_info_full_json = fetch_user_info(username)
         user_data_str = format_user_info(user_info)
         user_info_text_widget.config(state="normal")
@@ -26,8 +27,19 @@ def get_user_info(username_entry, user_info_text_widget, show_user_info_json_but
 
         make_links_clickable(user_info_text_widget, user_data_str)
         show_user_info_json_button.config(state="normal", command=lambda: open_json_window(user_info_full_json))
+
+        # Automatically load the first batch of posts and comments
+        user_posts.clear()
+        user_posts_full_json.clear()
+        get_user_posts(username_entry, canvas_posts, canvas_frame_posts, user_posts, user_posts_full_json)
+
+        user_comments.clear()
+        user_comments_full_json.clear()
+        get_user_comments(username_entry, canvas_comments, canvas_frame_comments, user_comments, user_comments_full_json)
+
     except Exception as e:
         messagebox.showerror("Error", f"Failed to fetch data: {e}")
+
 
 def get_user_posts(username_entry, canvas, canvas_frame, user_posts, user_posts_full_json):
     global user_posts_generator
@@ -43,14 +55,16 @@ def get_user_posts(username_entry, canvas, canvas_frame, user_posts, user_posts_
             next_user_posts, next_user_posts_full_json = fetch_user_posts_batch(user_posts_generator)
             user_posts.extend(next_user_posts)
             user_posts_full_json.extend(next_user_posts_full_json)
-            display_user_posts(user_posts, user_posts_full_json, canvas, canvas_frame)
         else:  # Load more posts when button is clicked
             next_user_posts, next_user_posts_full_json = fetch_user_posts_batch(user_posts_generator, batch_size=5)
             user_posts.extend(next_user_posts)
             user_posts_full_json.extend(next_user_posts_full_json)
-            display_user_posts(user_posts, user_posts_full_json, canvas, canvas_frame)
+
+        display_user_posts(user_posts, user_posts_full_json, canvas, canvas_frame)
+
     except Exception as e:
         messagebox.showerror("Error", f"Failed to fetch posts: {e}")
+
 
 def get_user_comments(username_entry, canvas, canvas_frame, user_comments, user_comments_full_json):
     global user_comments_generator
@@ -66,14 +80,16 @@ def get_user_comments(username_entry, canvas, canvas_frame, user_comments, user_
             next_user_comments, next_user_comments_full_json = fetch_user_comments_batch(user_comments_generator)
             user_comments.extend(next_user_comments)
             user_comments_full_json.extend(next_user_comments_full_json)
-            display_user_comments(user_comments, user_comments_full_json, canvas, canvas_frame)
         else:  # Load more comments when button is clicked
             next_user_comments, next_user_comments_full_json = fetch_user_comments_batch(user_comments_generator, batch_size=5)
             user_comments.extend(next_user_comments)
             user_comments_full_json.extend(next_user_comments_full_json)
-            display_user_comments(user_comments, user_comments_full_json, canvas, canvas_frame)
+
+        display_user_comments(user_comments, user_comments_full_json, canvas, canvas_frame)
+
     except Exception as e:
         messagebox.showerror("Error", f"Failed to fetch comments: {e}")
+
 
 def display_user_posts(posts, full_posts_json, canvas, canvas_frame):
     """Display the list of posts and their details in the canvas."""
@@ -94,6 +110,7 @@ def display_user_posts(posts, full_posts_json, canvas, canvas_frame):
     canvas.update_idletasks()
     canvas.config(scrollregion=canvas.bbox("all"))
 
+
 def display_user_comments(comments, full_comments_json, canvas, canvas_frame):
     """Display the list of comments and their details in the canvas."""
     for widget in canvas_frame.winfo_children():
@@ -113,10 +130,20 @@ def display_user_comments(comments, full_comments_json, canvas, canvas_frame):
     canvas.update_idletasks()
     canvas.config(scrollregion=canvas.bbox("all"))
 
+
 def setup_gui():
     root = tk.Tk()
     root.title("Reddit User Data Extractor")
     root.geometry("800x800")
+
+    def check_for_quit(event=None):
+        """Allow quitting by pressing 'q', 'Q', or 'ESC'."""
+        root.destroy()
+
+    root.bind("q", check_for_quit)  # 'q' key to quit
+    root.bind("Q", check_for_quit)  # 'Q' key to quit
+    root.bind("<Escape>", check_for_quit)  # ESC key to quit
+
     notebook = ttk.Notebook(root)
 
     selected_tab = ttk.Frame(notebook)
@@ -138,12 +165,8 @@ def setup_gui():
     show_user_info_json_button = tk.Button(selected_tab, text="View Full JSON", state="disabled")
     show_user_info_json_button.grid(row=2, column=1, pady=10)
 
-    fetch_button = tk.Button(selected_tab, text="Fetch Data", command=lambda: get_user_info(username_entry, user_info_text_widget, show_user_info_json_button))
-    fetch_button.grid(row=0, column=2, padx=10, pady=10)
-
-    # User Posts Tab
+    # Posts Tab
     posts_canvas_frame = ttk.Frame(posts_tab)
-
     posts_canvas_frame.pack(padx=10, pady=10, fill="both", expand=True)
     canvas_posts = tk.Canvas(posts_canvas_frame)
     canvas_posts.pack(side="left", fill="both", expand=True)
@@ -154,10 +177,20 @@ def setup_gui():
     canvas_posts.create_window((0, 0), window=canvas_frame_posts, anchor="nw")
     user_posts = []
     user_posts_full_json = []
-    load_more_posts_button = tk.Button(posts_tab, text="Load More Posts", command=lambda: get_user_posts(username_entry, canvas_posts, canvas_frame_posts, user_posts, user_posts_full_json))
+    load_more_posts_button = tk.Button(
+        posts_tab,
+        text="Load More Posts",
+        command=lambda: get_user_posts(
+            username_entry,
+            canvas_posts,
+            canvas_frame_posts,
+            user_posts,
+            user_posts_full_json
+        )
+    )
     load_more_posts_button.pack(padx=10, pady=10)
 
-    # User Comments Tab
+    # Comments Tab
     comments_canvas_frame = ttk.Frame(comments_tab)
     comments_canvas_frame.pack(padx=10, pady=10, fill="both", expand=True)
     canvas_comments = tk.Canvas(comments_canvas_frame)
@@ -169,10 +202,40 @@ def setup_gui():
     canvas_comments.create_window((0, 0), window=canvas_frame_comments, anchor="nw")
     user_comments = []
     user_comments_full_json = []
-    load_more_comments_button = tk.Button(comments_tab, text="Load More Comments", command=lambda: get_user_comments(username_entry, canvas_comments, canvas_frame_comments, user_comments, user_comments_full_json))
+    load_more_comments_button = tk.Button(
+        comments_tab,
+        text="Load More Comments",
+        command=lambda: get_user_comments(
+            username_entry,
+            canvas_comments,
+            canvas_frame_comments,
+            user_comments,
+            user_comments_full_json
+        )
+    )
     load_more_comments_button.pack(padx=10, pady=10)
 
+    fetch_button = tk.Button(
+        selected_tab,
+        text="Search",
+        command=lambda: get_user_info(
+            username_entry,
+            user_info_text_widget,
+            show_user_info_json_button,
+            canvas_posts,
+            canvas_frame_posts,
+            user_posts,
+            user_posts_full_json,
+            canvas_comments,
+            canvas_frame_comments,
+            user_comments,
+            user_comments_full_json
+        )
+    )
+    fetch_button.grid(row=0, column=2, padx=10, pady=10)
+
     root.mainloop()
+
 
 def main_user_osint():
     setup_gui()
