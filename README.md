@@ -96,7 +96,7 @@ The application's graphical user interface is now centered around retrieving and
     *   **View JSON Button:** Shows the raw JSON response from the Reddit API for the subreddit.
     *   **Export to CSV Button:** Exports the full JSON data for the subreddit and its posts into CSV files, saving them in a dedicated folder.
 
-## Window Closing and Navigation Behavior
+### Window Closing and Navigation Behavior
 
 *   When you press q, Q, or Esc on any window, the window will automatically close. Note that a click inside the window is required before pressing these keys for the action to be registered. This issue could be resolved by making all windows fullscreen, which could be considered in future updates. Additionally, when you exit the User or Subreddit OSINT windows, you will automatically return to the main menu, allowing you to search for another user or subreddit without restarting the application. However, you can also search for a new username or subreddit without returning to the main menu by simply entering the new name in the search bar and clicking "Search" again.
 
