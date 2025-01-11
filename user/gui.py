@@ -1,6 +1,7 @@
 import tkinter as tk
+import pandas as pd
+import os
 from tkinter import messagebox, ttk
-
 from utils import reddit, make_links_clickable, open_json_window
 from .formatters import format_user_info, format_user_post, format_user_comment
 from .api_fetch import fetch_user_info, fetch_user_posts_batch, fetch_user_comments_batch
@@ -9,7 +10,7 @@ user_posts_generator = None
 user_comments_generator = None
 
 
-def get_user_info(username_entry, user_info_text_widget, show_user_info_json_button, canvas_posts, canvas_frame_posts, user_posts, user_posts_full_json, canvas_comments, canvas_frame_comments, user_comments, user_comments_full_json):
+def get_user_info(username_entry, user_info_text_widget, show_user_info_json_button, export_button, canvas_posts, canvas_frame_posts, user_posts, user_posts_full_json, canvas_comments, canvas_frame_comments, user_comments, user_comments_full_json):
     """Fetch user data and update the GUI with selected fields."""
     username = username_entry.get().strip()
     if not username:
@@ -27,6 +28,9 @@ def get_user_info(username_entry, user_info_text_widget, show_user_info_json_but
 
         make_links_clickable(user_info_text_widget, user_data_str)
         show_user_info_json_button.config(state="normal", command=lambda: open_json_window(user_info_full_json))
+
+        # Enable export button after user data is fetched
+        export_button.config(state="normal", command=lambda: export_to_csv(user_info_full_json, user_posts_full_json, user_comments_full_json, username))
 
         # Automatically load the first batch of posts and comments
         user_posts.clear()
@@ -131,6 +135,40 @@ def display_user_comments(comments, full_comments_json, canvas, canvas_frame):
     canvas.config(scrollregion=canvas.bbox("all"))
 
 
+def export_to_csv(user_info_full_json, user_posts_full_json, user_comments_full_json, username):
+    """Export user info, posts, and comments raw JSON data to separate CSV files."""
+    try:
+        # Create the directory for the user if it doesn't exist
+        directory = f"exports/users/{username}"
+        os.makedirs(directory, exist_ok=True)
+
+        # Define the file paths for user info, posts, and comments
+        user_info_filename = f"{directory}/user_info.csv"
+        posts_filename = f"{directory}/posts.csv"
+        comments_filename = f"{directory}/comments.csv"
+
+        # Convert user info JSON to DataFrame and write to CSV
+        user_info_df = pd.DataFrame([user_info_full_json])  # Wrap JSON in a list to create a single row
+        user_info_df.to_csv(user_info_filename, index=False, encoding='utf-8')
+
+        # Convert posts JSON to DataFrame and write to CSV
+        posts_df = pd.DataFrame(user_posts_full_json)  # Assuming posts are in raw JSON format
+        posts_df.to_csv(posts_filename, index=False, encoding='utf-8')
+
+        # Convert comments JSON to DataFrame and write to CSV
+        comments_df = pd.DataFrame(user_comments_full_json)  # Assuming comments are in raw JSON format
+        comments_df.to_csv(comments_filename, index=False, encoding='utf-8')
+
+        messagebox.showinfo("Success", f"Data exported to {directory}/")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to export data: {e}")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to export data: {e}")
+
+
+
 def setup_gui():
     root = tk.Tk()
     root.title("Reddit User Data Extractor")
@@ -164,6 +202,10 @@ def setup_gui():
 
     show_user_info_json_button = tk.Button(selected_tab, text="View Full JSON", state="disabled")
     show_user_info_json_button.grid(row=2, column=1, pady=10)
+
+    # Add Export button
+    export_button = tk.Button(selected_tab, text="Export to CSV", state="disabled")
+    export_button.grid(row=2, column=2, pady=10)
 
     # Posts Tab
     posts_canvas_frame = ttk.Frame(posts_tab)
@@ -222,6 +264,7 @@ def setup_gui():
             username_entry,
             user_info_text_widget,
             show_user_info_json_button,
+            export_button,
             canvas_posts,
             canvas_frame_posts,
             user_posts,

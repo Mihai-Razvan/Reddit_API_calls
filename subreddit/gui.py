@@ -1,4 +1,6 @@
 import tkinter as tk
+import pandas as pd
+import os
 from tkinter import messagebox, ttk
 
 from utils import reddit, make_links_clickable, open_json_window
@@ -8,7 +10,7 @@ from .api_fetch import fetch_subreddit_info, fetch_subreddit_posts_batch
 
 subreddit_posts_generator = None
 
-def get_subreddit_info(subreddit_entry, subreddit_info_text_widget, show_subreddit_info_json_button, canvas_posts, canvas_frame_posts, subreddit_posts, subreddit_posts_full_json):
+def get_subreddit_info(subreddit_entry, subreddit_info_text_widget, show_subreddit_info_json_button, export_button, canvas_posts, canvas_frame_posts, subreddit_posts, subreddit_posts_full_json):
     """Fetch subreddit data and update the GUI with selected fields."""
     subreddit_name = subreddit_entry.get().strip()
     if not subreddit_name:
@@ -26,6 +28,9 @@ def get_subreddit_info(subreddit_entry, subreddit_info_text_widget, show_subredd
 
         make_links_clickable(subreddit_info_text_widget, subreddit_data_str)
         show_subreddit_info_json_button.config(state="normal", command=lambda: open_json_window(subreddit_info_full_json))
+
+        # Enable export button after user data is fetched
+        export_button.config(state="normal", command=lambda: export_to_csv(subreddit_info_full_json, subreddit_posts_full_json, subreddit_name))
 
         # Automatically load the first batch of posts
         subreddit_posts.clear()
@@ -81,6 +86,34 @@ def display_subreddit_posts(posts, full_posts_json, canvas, canvas_frame):
     canvas.config(scrollregion=canvas.bbox("all"))
 
 
+def export_to_csv(subreddit_info_full_json, subreddit_posts_full_json, subreddit_name):
+    """Export subreddit info and posts raw JSON data to separate CSV files."""
+    try:
+        # Create the directory for the subreddit if it doesn't exist
+        directory = f"exports/subreddit/{subreddit_name}"
+        os.makedirs(directory, exist_ok=True)
+
+        # Define the file paths for subreddit info and posts
+        subreddit_info_filename = f"{directory}/subreddit_info.csv"
+        posts_filename = f"{directory}/posts.csv"
+
+        # Convert subreddit info JSON to DataFrame and write to CSV
+        user_info_df = pd.DataFrame([subreddit_info_full_json])  # Wrap JSON in a list to create a single row
+        user_info_df.to_csv(subreddit_info_filename, index=False, encoding='utf-8')
+
+        # Convert posts JSON to DataFrame and write to CSV
+        posts_df = pd.DataFrame(subreddit_posts_full_json)  # Assuming posts are in raw JSON format
+        posts_df.to_csv(posts_filename, index=False, encoding='utf-8')
+
+        messagebox.showinfo("Success", f"Data exported to {directory}/")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to export data: {e}")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to export data: {e}")
+
+
 def setup_gui():
     root = tk.Tk()
     root.title("Reddit Subreddit Data Extractor")
@@ -115,6 +148,10 @@ def setup_gui():
     show_subreddit_info_json_button = tk.Button(selected_tab, text="View Full JSON", state="disabled")
     show_subreddit_info_json_button.grid(row=2, column=1, pady=10)
 
+    # Add Export button
+    export_button = tk.Button(selected_tab, text="Export to CSV", state="disabled")
+    export_button.grid(row=2, column=2, pady=10)
+
     subreddit_posts = []
     subreddit_posts_full_json = []
 
@@ -125,6 +162,7 @@ def setup_gui():
             subreddit_entry,
             subreddit_info_text_widget,
             show_subreddit_info_json_button,
+            export_button,
             canvas_posts,
             canvas_frame_posts,
             subreddit_posts,
