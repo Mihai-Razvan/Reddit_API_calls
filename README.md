@@ -2,6 +2,8 @@
 
 This project is a Python desktop application built with Tkinter that interacts with the Reddit API. It allows you to authenticate with your Reddit account and retrieve information about users and subreddits through a user-friendly graphical interface.
 
+Demo: https://youtu.be/stduPq26B3g
+
 ## Overview
 
 The application provides a simple way to interact with Reddit programmatically. It currently supports the following functionalities:
